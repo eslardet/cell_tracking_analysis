@@ -5,6 +5,10 @@ all_wells = ["B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11",
              "F2", "F3", "F4", "F5", "F6", "F7",
              "G2", "G3", "G4", "G5", "G6", "G7"]
 
+all_groups = ["Only glial cells", "Uninfected healthy control", "AC lPVL", "AC hPVL", "HAM"]
+all_stim = ["With stimulation", "No stimulation"]
+all_t_cell = ["Non-specific CD4", "Specific CD4", "Non-specific CD8", "Specific CD8"]
+
 patient_group_dict = {"Only glial cells": ["F6", "F7", "G6", "G7"],
                       "Uninfected healthy control": ["F2", "F3", "F4", "F5","G2", "G3", "G4", "G5"],
                       "AC lPVL": ["B2", "B3", "C2", "C3", "D2", "D3", "E2", "E3"],
@@ -24,6 +28,8 @@ t_cell_dict = {"Non-specific CD4": ["B2", "B3", "B4", "B5", "B6", "B7", "B8", "B
 plate_dict = {"Astrocytes & T-cells": ["1722", "1727", "1736"],
               "Microglia & T-cells": ["1723", "1728", "1737"],
               "T-cells only": ["1724", "1729", "1738"]}
+
+
 
 def get_wells(group, stim, t_cell):
     # Example:
@@ -46,6 +52,9 @@ def get_well_info(well):
             well_t_cell = t_cell
     
     return well_group, well_t_cell, well_stim
+
+def get_plates(cell_types):
+    return plate_dict[cell_types]
 
 def get_plate_info(plate):
     cell_types = ""

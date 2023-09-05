@@ -4,7 +4,13 @@ from bs4 import BeautifulSoup as bs
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
 import os
+from scipy import stats
 
+def get_xml_file(plate, well, phase="green"):
+    xml_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/xml/" + plate
+    filename = 'VID' + plate + '_' + phase + '_' + well + '_1'
+    file_path = os.path.join(xml_folder, filename + '.xml')
+    return file_path
 
 def read_xml(file_path):
     with open(file_path, 'r') as f:
@@ -54,10 +60,9 @@ def get_sdt(file_path, max_frames=25, plot=False):
     
     return msd
 
-def get_msd(file_path, max_frames=25, plot=False):
+def get_msd(file_path, max_frames=200, plot=False, remove_outliers=False):
     tracks = read_xml(file_path)
     msd = []
-
     for t in range(max_frames):
         msd_t = []
         for track in tracks:
@@ -66,8 +71,15 @@ def get_msd(file_path, max_frames=25, plot=False):
                 for t0 in range(n_frames-t):
                     diff = np.array(track[t+t0][1:]) - np.array(track[t0][1:])
                     msd_t.append(diff[0]**2 + diff[1]**2)
-        msd.append(np.mean(msd_t))
-
+        if remove_outliers == True:
+            msd_t_filtered = sorted(msd_t)[:-10]
+            mean_t = np.mean(msd_t_filtered)
+            msd.append(mean_t)
+        else:
+            mean_t = np.mean(msd_t)
+            msd.append(mean_t)
+        
+        
     if plot == True:
         plt.loglog(range(max_frames), msd)
         # plt.loglog(np.arange(1, 3, 1), 500*np.arange(1, 3, 1), label=r"$\propto t$")
@@ -78,7 +90,25 @@ def get_msd(file_path, max_frames=25, plot=False):
     
     return msd
 
-def plot_sdt_vs_t0(file_path, tau_range, plot_name, max_frames=25, max_plot=15, log=False):
+def get_msd_individual_tracks(file_path, max_frames=200):
+    tracks = read_xml(file_path)
+    msd_all = []
+    for track in tracks:
+        msd = []
+        n_frames = track[-1][0]-track[0][0]
+        for t in range(max_frames):
+            msd_t = []
+            if t<n_frames:
+                for t0 in range(n_frames-t):
+                    diff = np.array(track[t+t0][1:]) - np.array(track[t0][1:])
+                    msd_t.append(diff[0]**2 + diff[1]**2)
+            if len(msd_t) > 0:
+                mean_t = np.mean(msd_t)
+                msd.append(mean_t)
+        msd_all.append(msd)
+    return msd_all
+
+def plot_sdt_vs_t0(file_path, tau_range, plot_name, max_frames=200, max_plot=15, log=False):
 
     fig, ax = plt.subplots()
     tracks = read_xml(file_path)

@@ -1,61 +1,123 @@
 import os
-import analysis_functions_xml as fun
 import numpy as np
 import time
 from matplotlib import pyplot as plt
+from analysis_functions_xml import *
+from well_plate_dictionary import *
+import warnings
 
-save_plot=True
-plate = 'VID1713'
-plot_name = plate + "_short.png"
-show_plot=False
-max_t = 3
+cell_type = 'Astrocytes & T-cells'
+group_list = ["Uninfected healthy control"]
+stim_list = ["With stimulation"]
+t_cell_list = ["Non-specific CD4"]
 
-# plate = "1712"
-# well = "B2"
-# pic = "1"
+phase = 'green'
 
-# file_path = "tracks/VID" + plate + "_day_red_" + well + "_" + pic + "_Tracks_bright.xml"
+def get_d(plate, well):
+    file_path = get_xml_file(plate, well)
+    msd = get_msd(file_path)
+    n_frames = len(msd)
+    max_t = n_frames // 3
+    d = np.polyfit(np.arange(max_t)/3, msd[:max_t], 1)[0]/4  
+    return d
 
-plate_dict = {'VID1711': "Astrocytes & T-cells", 'VID1712': "Microglia & T-cells", 'VID1713': "T-cells only"}
-number_dict = {2:'low PVL, not stim. \n', 3: 'low PVL, stim. \n', 4: 'high PVL1, not stim. \n', 5: 'high PVL1, stim. \n', 6: 'high PVL2, not stim. \n', 7: 'high PVL2, stim. \n', 8: 'HAM1, not stim. \n', 9: 'HAM1, stim. \n', 10: 'HAM2, not stim. \n', 11: 'HAM2, stim. \n'}
-cell_dict = {'B': 'non-specific CD4', 'C': 'specific CD4', 'D': 'not-specific CD8', 'E': 'specific CD8'}
-cell_dict_tcell = {'B': 'non-specific CD4', 'C': 'S CD4 + non-specific CD8', 'D': 'specific CD8'}
+def get_d_all_tracks(plate, well):
+    file_path = get_xml_file(plate, well)
+    msd_all = get_msd_individual_tracks(file_path)
+    # fig, ax = plt.subplots()
+    all_d = []
+    for msd in msd_all:
+        n_frames = len(msd)
+        if n_frames > 12:
+            max_t = n_frames // 3
+            d = np.polyfit(np.arange(max_t)/3, msd[:max_t], 1)[0]/4
+            all_d.append(d)
+    return all_d
 
-fig, ax = plt.subplots(figsize=(15,8))
+def get_d_average(cell_type, group, stim, t_cell, average_type="both"):
+    """
+    average_type: "all_track" or "mean_track" or "both"
+    """
+    plate_list = get_plates(cell_type)
+    well_list = get_wells(group, stim, t_cell)
+    all_d = []
+    d_av = []
+    for plate in plate_list:
+        for well in well_list:
+            file_path = get_xml_file(plate, well)
+            if os.path.exists(file_path):
+                all_d += get_d_all_tracks(plate, well)
+                d_av.append(get_d(plate, well))
+    if average_type == "all_track":
+        return np.mean(all_d)
+    elif average_type == "mean_track":
+        return np.mean(d_av)
+    else:
+        return np.mean(all_d), np.mean(d_av)
 
 
-diff_const = []
-treatment = []
+def set_axis_style(ax, labels):
+    ax.get_xaxis().set_tick_params(direction='out')
+    ax.xaxis.set_ticks_position('bottom')
+    ax.set_xticks(np.arange(1, len(labels) + 1))
+    ax.set_xticklabels(labels)
+    ax.set_xlim(0.25, len(labels) + 0.75)
 
-for cell in ['B', 'D']:
-    for number in np.arange(2,12):
-        well = cell + str(number)
+def plot_d_violin(cell_type, group_list, stim_list, t_cell_list, save_plot=False, show_plot=True):
+    fig, ax = plt.subplots(figsize=(12,6))
 
-        xml_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/xml_short"
-        phase = 'red'
-        # well = 'B10'
-        pic = '1'
+    plot_d = []
+    x_ticks = []
+    d_mean = []
+    plate_list = get_plates(cell_type)
+    for group in group_list:
+        for stim in stim_list:
+            for t_cell in t_cell_list:
+                well_list = get_wells(group, stim, t_cell)
+                all_d = []
+                d_av = []
+                for plate in plate_list:
+                    for well in well_list:
+                        file_path = get_xml_file(plate, well)
+                        if os.path.exists(file_path):
+                            d_tracks = get_d_all_tracks(plate, well)
+                            all_d += d_tracks
+                            d_av.append(get_d(plate, well))
+                plot_d.append(all_d)
+                x_ticks.append(group + "\n " + stim + "\n " + t_cell)
 
-        filename = plate + '_' + phase + '_' + well + '_' + pic
-        file_path = os.path.join(xml_folder, filename + '.xml')
+                d_mean.append(np.mean(d_av))
+    ax.violinplot(plot_d, showmeans=False, showextrema=True, showmedians=False, points=500)
+    ax.scatter(np.arange(1, len(d_mean)+1), d_mean)
+    ax.set_title(cell_type)
+    set_axis_style(ax,x_ticks)
+    ax.set_ylim(0,200)
+    ax.set_ylabel("Diffusion constant (pixels^2/hour)")
 
-        # tracks = fun.read_xml(file_path)
+    if save_plot == True:  
+        plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/diffusion_const"
+        plot_name = cell_type + "_" + stim + "_" + t_cell + ".png"
+        plt.savefig(os.path.join(plot_folder, plot_name))
 
-        msd = fun.get_msd(file_path, plot=False)
-        diff_const.append(np.polyfit(np.arange(max_t), msd[:max_t], 1)[0]/4)
-        if plate == "VID1713":
-            treatment.append(number_dict[number] + cell_dict_tcell[cell])
-        else:
-            treatment.append(number_dict[number] + cell_dict[cell])
+    if show_plot == True:
+        plt.show()
 
-ax.scatter(treatment, diff_const)
-ax.set_ylabel("Diffusion constant (pixels/ hour)")
-plt.xticks(fontsize=7,rotation=45)
-ax.set_title("T-cells only")
 
-if save_plot == True:
-    plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/diffusion_const"
-    plt.savefig(os.path.join(plot_folder, plot_name))
+cell_type = 'Astrocytes & T-cells'
+group = "Uninfected healthy control"
+stim = "With stimulation"
+t_cell = "Non-specific CD4"
 
-if show_plot == True:
-    plt.show()
+# warnings.filterwarnings("ignore")
+# get_d_average(cell_type, group, stim, t_cell)
+
+cell_type = 'Microglia & T-cells'
+group_list = ["Uninfected healthy control", "AC lPVL", "AC hPVL", "HAM"]
+stim_list = ["With stimulation"]
+t_cell_list = ["Specific CD4"]
+
+for stim in all_stim:
+    for t_cell in all_stim:
+        stim_list = [stim]
+        t_cell_list = [t_cell]
+        plot_d_violin(cell_type, group_list, stim_list, t_cell_list, save_plot=True, show_plot=False)
