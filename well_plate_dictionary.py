@@ -20,10 +20,11 @@ stimulation_dict = {"With stimulation": ["B2", "B4", "B6", "B8", "B10", "C2", "C
                     "No stimulation": ["B3", "B5", "B7", "B9", "B11", "C3", "C5", "C7", "C9", "C11", "D3", "D5", "D7", "D9", "D11", 
                                          "E3", "E5", "E7", "E9", "E11", "F3", "F5", "G3", "G5"]}
 
-t_cell_dict = {"Non-specific CD4": ["B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "F2", "F3", "F4", "F5"],
-               "Specific CD4": ["C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "G2", "G3", "G4", "G5"],
-               "Non-specific CD8": ["D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11"],
-               "Specific CD8": ["E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "E10", "E11"]}
+## Check whether F4, F5, G4, G5 are CD4 or CD8????
+t_cell_dict = {"Non-specific CD4": ["B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "F2", "F3"],
+               "Specific CD4": ["C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "G2", "G3"],
+               "Non-specific CD8": ["D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "F4", "F5"],
+               "Specific CD8": ["E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "E10", "E11", "G4", "G5"]}
 
 plate_dict = {"Astrocytes & T-cells": ["1722", "1727", "1736"],
               "Microglia & T-cells": ["1723", "1728", "1737"],

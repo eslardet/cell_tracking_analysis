@@ -36,29 +36,6 @@ def read_xml(file_path):
     return tracks
 
 
-## Squared distance travelled (MSD with no average over t_0 (always set to 0))
-def get_sdt(file_path, max_frames=25, plot=False):
-    tracks = read_xml(file_path)
-    msd = []
-
-    for t in range(max_frames):
-        msd_t = []
-        for track in tracks:
-            n_frames = track[-1][0]-track[0][0]
-            if t<n_frames:
-                diff = np.array(track[t][1:]) - np.array(track[0][1:])
-                msd_t.append(diff[0]**2 + diff[1]**2)
-        msd.append(np.mean(msd_t))
-
-    if plot == True:
-        plt.loglog(range(max_frames), msd)
-        # plt.loglog(np.arange(1, 3, 1), 500*np.arange(1, 3, 1), label=r"$\propto t$")
-        # plt.legend()
-        plt.xlabel("Time (hours)")
-        plt.ylabel("MSD (pixels)")
-        plt.show()
-    
-    return msd
 
 def get_msd(file_path, max_frames=200, plot=False, remove_outliers=False):
     tracks = read_xml(file_path)
@@ -107,6 +84,54 @@ def get_msd_individual_tracks(file_path, max_frames=200):
                 msd.append(mean_t)
         msd_all.append(msd)
     return msd_all
+
+
+
+## Squared distance travelled 
+# MSD with no average over t_0 (always set to 0)
+# Only use tracks with t_0 <= 2
+def get_sdt(file_path, max_frames=200, plot=False):
+    tracks = read_xml(file_path)
+    sdt = []
+    for t in range(max_frames):
+        sdt_t = []
+        for track in tracks:
+            t0 = track[0][0]
+            if t0 <= 2:
+                n_frames = track[-1][0]-track[0][0]
+                if t<n_frames:
+                    diff = np.array(track[t][1:]) - np.array(track[0][1:])
+                    sdt_t.append(diff[0]**2 + diff[1]**2)
+        sdt.append(np.mean(sdt_t))
+
+    if plot == True:
+        plt.plot(range(max_frames), sdt)
+        # plt.loglog(np.arange(1, 3, 1), 500*np.arange(1, 3, 1), label=r"$\propto t$")
+        # plt.legend()
+        plt.xlabel("Time (hours)")
+        plt.ylabel("MSD (pixels)")
+        plt.show()
+    
+    return sdt
+
+def get_sdt_individual_tracks(file_path, max_frames=200):
+    tracks = read_xml(file_path)
+    sdt_all = []
+    for track in tracks:
+        t0 = track[0][0]
+        if t0 <= 2:
+            sdt = []
+            n_frames = track[-1][0]-track[0][0]
+            for t in range(max_frames):
+                sdt_t = []
+                if t<n_frames:
+                    diff = np.array(track[t][1:]) - np.array(track[0][1:])
+                    sdt_t.append(diff[0]**2 + diff[1]**2)
+                if len(sdt_t) > 0:
+                    mean_t = np.mean(sdt_t)
+                    sdt.append(mean_t)
+            sdt_all.append(sdt)
+    return sdt_all
 
 def plot_sdt_vs_t0(file_path, tau_range, plot_name, max_frames=200, max_plot=15, log=False):
 

@@ -1,62 +1,63 @@
 import os
-import analysis_functions_xml as fun
 import numpy as np
 import time
 from matplotlib import pyplot as plt
+from analysis_functions_xml import *
+from well_plate_dictionary import *
 
 
 
-plate = "VID1712"
-cell = "E"
-number = 11
-phase = "red"
-pic = "1"
+def plot_sdt_overlay(cell_type, group_list, stim_list, t_cell_list, phase='green', log=False, max_frames=200):
 
-plot_name = plate + "_HAM2.png"
+    fig, ax = plt.subplots()
 
-plate_dict = {'VID1711': "Astrocytes & T-cells", 'VID1712': "Microglia & T-cells", 'VID1713': "T-cells only"}
-number_dict = {2:'low PVL, not stim. ', 3: 'low PVL, stim. ', 4: 'high PVL1, not stim.', 5: 'high PVL1, stim.', 6: 'high PVL2, not stim.', 7: 'high PVL2, stim.', 8: 'HAM1, not stim.', 9: 'HAM1, stim.', 10: 'HAM2, not stim. ', 11: 'HAM2, stim. '}
-if plate == "1713":
-    cell_dict = {'B': 'non-specific CD4', 'C': 'specific CD4 + non-specific CD8', 'D': 'specific CD8'}
-else:
-    cell_dict = {'B': 'non-specific CD4', 'C': 'specific CD4', 'D': 'not-specific CD8', 'E': 'specific CD8'}
+    plate_list = get_plates(cell_type)
+    for group in group_list:
+        for stim in stim_list:
+            for t_cell in t_cell_list:
+                for plate in plate_list:
+                    well_list = get_wells(group, stim, t_cell)
+                    for well in well_list:
+                        file_path = get_xml_file(plate, well, phase)
+                        if os.path.exists(file_path):
+                            sdt = get_sdt(file_path, max_frames=max_frames, plot=False)
+                            plot_label = get_well_info(well)[0] + ", " + get_well_info(well)[1] + ", " + get_well_info(well)[2]
+                            # plot_label = plate + ", " + well
+                            if log == True:
+                                ax.loglog(np.arange(len(sdt))/3, sdt, label=plot_label)
+                            else:
+                                ax.plot(np.arange(len(sdt))/3, sdt, label=plot_label)
+
+    ax.set_xlabel(r"$\tau$ (hours)")
+    ax.set_ylabel("SDT (pixels^2)")
+    plt.legend()
+    plt.show()
+
+def plot_sdt_all_tracks(plate, well):
+    file_path = get_xml_file(plate, well)
+    sdt_all = get_sdt_individual_tracks(file_path)
+    fig, ax = plt.subplots()
+    for sdt in sdt_all:
+        n_frames = len(sdt)
+        max_t = n_frames // 3
+        # ax.plot(np.arange(max_t)/3, sdt[:max_t])
+
+        ax.plot(np.arange(len(sdt))/3, sdt/3)
+
+    ax.set_xlabel(r"$\tau$ (hours)")
+    ax.set_ylabel("SDT (pixels^2)")
+    plt.show()
+
+cell_type = 'Microglia & T-cells'
+group_list = ["Uninfected healthy control", "HAM"]
+stim_list = ["With stimulation"]
+t_cell_list = ["Non-specific CD4"]
+
+phase = 'green'
+log = False
+remove_outliers = False
+
+plot_sdt_overlay(cell_type, group_list, stim_list, t_cell_list, phase, log, max_frames=72)
 
 
-max_frames = 25
-max_plot = 25
-
-# file_path = "tracks/VID" + plate + "_day_red_" + well + "_" + pic + "_Tracks_bright.xml"
-
-fig, ax = plt.subplots()
-
-xml_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/xml_short"
-
-filename = plate + '_' + phase + '_' + cell + str(number) + '_' + pic
-file_path = os.path.join(xml_folder, filename + '.xml')
-
-for cell in ['B', 'D']:
-    for number in np.arange(10,12):
-        well = cell + str(number)
-
-        xml_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/xml_short"
-        phase = 'red'
-        # well = 'B10'
-        pic = '1'
-
-        filename = plate + '_' + phase + '_' + well + '_' + pic
-        file_path = os.path.join(xml_folder, filename + '.xml')
-
-        # tracks = fun.read_xml(file_path)
-
-        sdt = fun.get_sdt_vs_t0(file_path, tau=2, max_frames=25)
-        ax.plot(range(max_frames), sdt, label=number_dict[number] + cell_dict[cell])
-
-ax.set_xlabel(r"$t_0$ (hours)")
-ax.set_ylabel("SDT (pixels)")
-ax.set_xlim(right=max_plot)
-ax.set_ylim(bottom=0)
-ax.legend()
-ax.set_title(plate_dict[plate])
-
-plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/sdt_vs_t0"
-plt.savefig(os.path.join(plot_folder, plot_name))
+# plot_sdt_all_tracks(plate='1736', well='F2')
