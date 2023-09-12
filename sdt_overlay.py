@@ -40,9 +40,9 @@ def plot_sdt_all_tracks(plate, well):
     for sdt in sdt_all:
         n_frames = len(sdt)
         max_t = n_frames // 3
-        # ax.plot(np.arange(max_t)/3, sdt[:max_t])
+        ax.plot(np.arange(max_t)/3, sdt[:max_t])
 
-        ax.plot(np.arange(len(sdt))/3, sdt/3)
+        # ax.plot(np.arange(len(sdt))/3, sdt/3)
 
     ax.set_xlabel(r"$\tau$ (hours)")
     ax.set_ylabel("SDT (pixels^2)")
@@ -57,7 +57,7 @@ phase = 'green'
 log = False
 remove_outliers = False
 
-plot_sdt_overlay(cell_type, group_list, stim_list, t_cell_list, phase, log, max_frames=72)
+# plot_sdt_overlay(cell_type, group_list, stim_list, t_cell_list, phase, log, max_frames=72)
 
 
-# plot_sdt_all_tracks(plate='1736', well='F2')
+plot_sdt_all_tracks(plate='1736', well='F4')

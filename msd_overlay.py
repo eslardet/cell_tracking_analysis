@@ -27,7 +27,8 @@ def plot_msd_overlay(cell_type, group_list, stim_list, t_cell_list, phase='green
                                 ax.loglog(np.arange(len(msd))/3, msd, label=plot_label)
                             else:
                                 ax.plot(np.arange(len(msd))/3, msd, label=plot_label)
-
+    ax.plot(np.arange(217)/3, np.arange(217)/3 *100)
+    # ax.plot(np.arange(217)/3, np.arange(217)**2/3 *100)
     ax.set_xlabel(r"$\tau$ (hours)")
     ax.set_ylabel("MSD (pixels^2)")
     plt.legend()
@@ -43,21 +44,21 @@ def plot_msd_all_tracks(plate, well):
         # ax.plot(np.arange(max_t)/3, msd[:max_t])
 
         ax.plot(np.arange(len(msd))/3, msd)
-
+    # ax.plot(np.arange(217)/3, np.arange(217)/3 *100, 'k')
     ax.set_xlabel(r"$\tau$ (hours)")
     ax.set_ylabel("MSD (pixels^2)")
     plt.show()
 
-cell_type = 'Astrocytes & T-cells'
-group_list = ["Uninfected healthy control"]
+cell_type = 'Microglia & T-cells'
+group_list = ["AC hPVL"]
 stim_list = ["With stimulation"]
 t_cell_list = ["Specific CD4"]
 
 phase = 'green'
-log = False
+log = True
 remove_outliers = False
 
-plot_msd_overlay(cell_type, group_list, stim_list, t_cell_list, phase, log, remove_outliers=False)
+# plot_msd_overlay(cell_type, group_list, stim_list, t_cell_list, phase, log, remove_outliers=False)
 
 
-# plot_msd_all_tracks(plate='1736', well='F4')
+plot_msd_all_tracks(plate='1737', well='F4')

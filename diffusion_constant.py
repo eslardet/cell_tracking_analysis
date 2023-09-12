@@ -164,7 +164,7 @@ def plot_d_box(cell_type, group_list, stim_list, t_cell_list, save_plot=False, s
 
     if save_plot == True:  
         plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/diffusion_const_box"
-        plot_name = cell_type + "_" + stim + "_" + t_cell + ".png"
+        plot_name = cell_type + "_" + stim + "_" + t_cell + "_extra.png"
         plt.savefig(os.path.join(plot_folder, plot_name))
 
     if show_plot == True:
@@ -178,7 +178,7 @@ t_cell = "Non-specific CD4"
 # warnings.filterwarnings("ignore")
 # get_d_average(cell_type, group, stim, t_cell)
 
-# cell_type = 'Microglia & T-cells'
+cell_type = 'Microglia & T-cells'
 group_list = ["Uninfected healthy control", "AC lPVL", "AC hPVL", "HAM"]
 stim_list = ["No stimulation"]
 t_cell_list = ["Non-specific CD4"]
@@ -187,14 +187,14 @@ t_cell_list = ["Non-specific CD4"]
 # plot_d_box(cell_type, group_list, stim_list, t_cell_list, save_plot=True, show_plot=False, y_upper=True)
 
 
-for cell_type in ["Astrocytes & T-cells", "Microglia & T-cells"]:
+for cell_type in ["Microglia & T-cells"]:
     t0 = time.time()
     for stim in all_stim:
         for t_cell in all_t_cell:
             stim_list = [stim]
             t_cell_list = [t_cell]
             plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/diffusion_const"
-            plot_name = cell_type + "_" + stim + "_" + t_cell + ".png"
+            # plot_name = cell_type + "_" + stim + "_" + t_cell + ".png"
             # if os.path.exists(os.path.join(plot_folder, plot_name)) == 0:
             # plot_d_violin(cell_type, group_list, stim_list, t_cell_list, save_plot=True, show_plot=False, y_upper=True)
             plot_d_box(cell_type, group_list, stim_list, t_cell_list, save_plot=True, show_plot=False, y_upper=True)
