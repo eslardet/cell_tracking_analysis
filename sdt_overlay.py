@@ -22,7 +22,7 @@ def plot_sdt_overlay(cell_type, group_list, stim_list, t_cell_list, phase='green
                         if os.path.exists(file_path):
                             sdt = get_sdt(file_path, max_frames=max_frames, plot=False)
                             plot_label = get_well_info(well)[0] + ", " + get_well_info(well)[1] + ", " + get_well_info(well)[2]
-                            # plot_label = plate + ", " + well
+                            plot_label = plate + ", " + well
                             if log == True:
                                 ax.loglog(np.arange(len(sdt))/3, sdt, label=plot_label)
                             else:
@@ -46,12 +46,13 @@ def plot_sdt_all_tracks(plate, well):
 
     ax.set_xlabel(r"$\tau$ (hours)")
     ax.set_ylabel("SDT (pixels^2)")
+    ax.set_ylim(0, 10000)
     plt.show()
 
 cell_type = 'Microglia & T-cells'
-group_list = ["Uninfected healthy control", "HAM"]
+group_list = ["Uninfected healthy control"]
 stim_list = ["With stimulation"]
-t_cell_list = ["Non-specific CD4"]
+t_cell_list = ["Specific CD4"]
 
 phase = 'green'
 log = False
@@ -60,4 +61,4 @@ remove_outliers = False
 # plot_sdt_overlay(cell_type, group_list, stim_list, t_cell_list, phase, log, max_frames=72)
 
 
-plot_sdt_all_tracks(plate='1736', well='F4')
+plot_sdt_all_tracks(plate='1737', well='G2')

@@ -7,16 +7,16 @@ import time
 from well_plate_dictionary import *
 import os
 
-plate = 1723
-exp = 107
-phase = "red"
-labels = ["Only Microglia", "Uninfected Healthy", "AC lPVL", "AC hPVL", "HAM"]
-
 def get_image(plate, well, phase):
     folder = "/Volumes/T7 Shield/Incucyte_data/processed_data/" + str(plate) + "/"
     filename = folder + "VID" + str(plate) + '_' + str(phase) + "_" + well + '_1.tif'
     im = io.imread(filename)
     return im
+
+def get_tif_file(plate, well, phase):
+    folder = "/Volumes/T7 Shield/Incucyte_data/processed_data/" + str(plate) + "/"
+    filename = folder + "VID" + str(plate) + '_' + str(phase) + "_" + well + '_1.tif'
+    return filename
 
 def display_image(im):
     io.imshow(im/np.max(im))
@@ -56,5 +56,13 @@ def resize_image(im, scale_factor):
     return im_scaled
 
 
-# im = resize_image(get_image("1723", "G2", "red")[-1], 4)
-# display_image(im)
+def get_distance_matrix(im):
+    """
+    Output matrix is distance shift matrix in terms of x, y pixels
+    """
+    h,w = im.shape
+    n = max(h,w)
+    x = np.tile(np.arange(0,n), (n,1))
+    y = x.transpose()
+    dist = np.sqrt(x**2+y**2)
+    return dist[:h,:w]

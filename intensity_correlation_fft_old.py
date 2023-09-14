@@ -79,8 +79,9 @@ def get_corr_im(im, take_av=True):
 
     return corr, dist
 
-def get_corr_binned(im, corr_r_min=0, corr_r_max=250, r_bin_num=200, corr_av=True):
+def get_corr_binned(im, corr_r_max=500, r_bin_num=100, corr_av=True):
     corr_all, dist = get_corr_im(im, corr_av)
+    corr_r_min = 0
 
     bin_size = (corr_r_max-corr_r_min) / r_bin_num
     r_plot = np.linspace(corr_r_min, corr_r_max, num=r_bin_num, endpoint=False) + bin_size/2
@@ -98,69 +99,46 @@ def get_corr_binned(im, corr_r_min=0, corr_r_max=250, r_bin_num=200, corr_av=Tru
 
     return r_plot, corr_plot
 
-def func(r, xi, coeff):
-    return np.exp(coeff)*np.exp(-r/xi)
+def plot_corr(im_all, frame, corr_r_max=500, r_bin_num=100, corr_av=True, show_fit=True, show_plot=True, save_plot=False):
+    im = im_all[frame]
+    r_plot, corr_plot = get_corr_binned(im, corr_r_max=corr_r_max, r_bin_num=r_bin_num, corr_av=corr_av)
 
-def fit_curve(r_plot, corr):
-    xi, coeff = curve_fit(func, r_plot, corr)[0]
-    return xi, coeff
-
-def fit_log_line(r_plot, corr, r_min, r_max):
-    r_plot = np.array(r_plot)
-    corr = np.array(corr)
-    idx1 = np.where(r_plot<r_max)[0]
-    idx2 = np.where(r_plot>r_min)[0]
-    idx = list(set(idx1) & set(idx2))
-    corr = corr[idx]
-    r_plot = r_plot[idx]
-
-    alpha, coeff = np.polyfit(r_plot, np.log(corr), deg=1)
-    xi = -1/alpha
-    return xi, coeff
-
-
-def plot_corr_log(im, frames, r_min, r_max, corr_av=True, save_plot=False, show_plot=True, x_lim=False):
     fig, ax = plt.subplots()
+    ax.plot(r_plot, corr_plot)
+    ax.set_xlabel("Distance (pixels)")
+    ax.set_ylabel("Correlation")
 
-    for i in frames:
-        radius, corr = get_corr_binned(im[i], corr_av=corr_av, corr_r_min=r_min, corr_r_max=r_max*2, r_bin_num=100)
-
-        ax.plot(radius, corr, label="Frame=" + str(i))
-        xi, coeff = fit_log_line(radius, corr, r_min, r_max)
-        print(xi, coeff)
-        r_plot = np.linspace(r_min, r_max, 100)
-        # # r_plot = np.logspace(np.log(10), np.log(50), 100, base=np.exp(1))
-        ax.plot(r_plot, func(r_plot, xi, coeff), '--', label=r"$\xi=$" + str(round(xi,2)))
-
-        ax.set_yscale('log')
-
-    ax.set_xlabel("r (pixels)")
-    ax.set_ylabel("C(r)")
-    # ax.set_ylim([0,1])
-    if x_lim == True:
-        ax.set_xlim(0,r_max*2)
-    ax.legend()
+    if show_fit == True:
+        r_plot, corr_plot = get_corr_binned(im, corr_r_max=corr_r_max, r_bin_num=r_bin_num, corr_av=corr_av)
+        xi, coeff, C_inf = fit_curve(r_plot, corr_plot)
+        ax.plot(r_plot, func(r_plot, xi, coeff, C_inf), '--', label=r"$\xi=$" + str(np.round(1/xi,2)))
+        ax.legend()
 
     if save_plot == True:
-        plate = "1737"
-        well = "F4"
         plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/correlation_functions/"
-        plt.savefig(plot_folder + str(plate) + '_' + well + '_log.png', bbox_inches='tight')
+        plt.savefig(plot_folder + str(plate) + '_' + well + '_' + str(frame) + '.png', bbox_inches='tight')
 
     if show_plot == True:
         plt.show()
 
-def get_exponent(im, r_min, r_max, corr_av=True):
-    radius, corr = get_corr_binned(im, corr_r_min=r_min, corr_r_max=r_max, r_bin_num=int(r_max-r_min), corr_av=corr_av)
-    xi, coeff = fit_log_line(radius, corr, r_min, r_max)
-    return xi
 
+def func(r, xi, coeff, C_inf):
+    return np.exp(coeff)*np.exp(-r/xi) + C_inf
 
-def plot_exponents_time(im_all, frames, r_min, r_max, corr_av=True, save_plot=False, show_plot=True):
+def fit_curve(r_plot, corr):
+    xi, coeff, C_inf = curve_fit(func, r_plot, corr)[0]
+    return xi, coeff, C_inf
+
+def get_exponent(im, corr_r_max=500, r_bin_num=100, corr_av=True):
+    r_plot, corr_plot = get_corr_binned(im, corr_r_max=corr_r_max, r_bin_num=r_bin_num, corr_av=corr_av)
+    xi, coeff, C_inf = fit_curve(r_plot, corr_plot)
+    return 1/xi
+
+def plot_exponents_time(im_all, frames, corr_r_max=500, r_bin_num=100, corr_av=True, save_plot=False, show_plot=True):
     exp = []
     for i in frames:
         im = im_all[i]
-        exp.append(get_exponent(im, r_min, r_max, corr_av))
+        exp.append(get_exponent(im, corr_r_max=corr_r_max, r_bin_num=r_bin_num, corr_av=corr_av))
 
     fig, ax = plt.subplots()
     ax.plot(frames/3, exp, '-o')
@@ -183,14 +161,12 @@ phase = "red"
 
 im = get_image(plate, well, phase)
 
-# plot_corr_log(im, frames=[0,216], r_min=10, r_max=50, corr_av=True, save_plot=False, show_plot=True)
-
-# plot_exponents_time(im_all=im, frames=np.arange(1, 212, 10), r_min=10, r_max=50, corr_av=True, save_plot=True, show_plot=True)
+plot_corr(im, frame=216, corr_r_max=250, r_bin_num=100, corr_av=True, save_plot=True, show_plot=False)
 
 # for well in all_wells:
 #     if not os.path.exists(get_tif_file(plate, well, phase)):
 #         print("File does not exist: " + str(plate) + ", " + str(well))
 #     else:
 #         im_all = get_image(plate, well, phase)
-#         frames = np.arange(1, 212, 10)
-#         plot_exponents_time(im_all=im_all, frames=np.arange(1, 212, 10), r_min=10, r_max=50, corr_av=True, save_plot=True, show_plot=False)
+#         frames = np.arange(1, 202, 10)
+#         plot_exponents_time(im_all, frames, save_plot=True, show_plot=False)

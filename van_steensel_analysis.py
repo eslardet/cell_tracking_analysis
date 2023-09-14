@@ -19,7 +19,7 @@ def get_exponent(r_plot, corr, min_r=5, max_r=50):
     return exponent
 
 def func(r, alpha, coeff, C_inf):
-    return r**(-alpha)*np.exp(coeff) + C_inf
+    return np.exp(-alpha)*np.exp(coeff) + C_inf
 
 def fit_curve(r_plot, corr):
     alpha, coeff, p_inf = curve_fit(func, r_plot, corr)[0]

@@ -33,3 +33,12 @@ from analysis_functions_xml import *
 # plt.plot(np.arange(len(sdt)), sdt)
 # plt.show()
 
+a = np.array([1, 2, 3])
+
+fig, ax = plt.subplots()
+
+for i in range(len(a)):
+    ax.scatter(a[i], 1)
+    ax.annotate(str(i), (a[i], 1))
+
+plt.show()

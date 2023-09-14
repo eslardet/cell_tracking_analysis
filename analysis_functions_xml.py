@@ -7,6 +7,7 @@ import os
 from scipy import stats
 
 def get_xml_file(plate, well, phase="green"):
+    plate = str(plate)
     xml_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/xml/" + plate
     filename = 'VID' + plate + '_' + phase + '_' + well + '_1'
     file_path = os.path.join(xml_folder, filename + '.xml')
@@ -37,9 +38,10 @@ def read_xml(file_path):
 
 
 
-def get_msd(file_path, max_frames=200, plot=False, remove_outliers=False):
+def get_msd(file_path, max_frames=200, plot=False, remove_outliers=False, return_sd=False):
     tracks = read_xml(file_path)
     msd = []
+    sd = []
     for t in range(max_frames):
         msd_t = []
         for track in tracks:
@@ -54,8 +56,9 @@ def get_msd(file_path, max_frames=200, plot=False, remove_outliers=False):
             msd.append(mean_t)
         else:
             mean_t = np.mean(msd_t)
+            sd_t = np.std(msd_t)
             msd.append(mean_t)
-        
+            sd.append(sd_t)
         
     if plot == True:
         plt.loglog(range(max_frames), msd)
@@ -65,7 +68,10 @@ def get_msd(file_path, max_frames=200, plot=False, remove_outliers=False):
         plt.ylabel("MSD (pixels)")
         plt.show()
     
-    return msd
+    if return_sd == True:
+        return msd, sd
+    else:
+        return msd
 
 def get_msd_individual_tracks(file_path, max_frames=200):
     tracks = read_xml(file_path)
@@ -85,6 +91,53 @@ def get_msd_individual_tracks(file_path, max_frames=200):
         msd_all.append(msd)
     return msd_all
 
+
+def get_msd_filter(file_path, max_frames=200, d_threshold=400, d_negative=True, plot=False):
+    msd_all = get_msd_individual_tracks(file_path, max_frames=max_frames)
+    all_index = []
+    for i in range(len(msd_all)):
+        msd = msd_all[i]
+        n_frames = len(msd)
+        if n_frames > 20:
+            # max_t = n_frames // 3
+            min_frame = 15
+            if n_frames < 72:
+                max_frame = n_frames
+            else:
+                max_frame = 72
+            d = np.polyfit(np.arange(max_frame-min_frame)/3, msd[min_frame:max_frame], 1)[0]/4
+            if d < d_threshold:
+                if d_negative == False:
+                    if d > 0:
+                        all_index.append(i)
+                else:
+                    all_index.append(i)
+
+    tracks = read_xml(file_path)
+    msd = []
+    for t in range(max_frames):
+        msd_t = []
+        # for track in tracks:
+        for i in all_index:
+            track = tracks[i]
+            n_frames = track[-1][0]-track[0][0]
+            if t<n_frames:
+                for t0 in range(n_frames-t):
+                    diff = np.array(track[t+t0][1:]) - np.array(track[t0][1:])
+                    msd_t.append(diff[0]**2 + diff[1]**2)
+        msd_t_filtered = sorted(msd_t)[:-10]
+        mean_t = np.mean(msd_t_filtered)
+        msd.append(mean_t)
+        
+    if plot == True:
+        plt.loglog(range(max_frames), msd)
+        # plt.loglog(np.arange(1, 3, 1), 500*np.arange(1, 3, 1), label=r"$\propto t$")
+        # plt.legend()
+        plt.xlabel("Time (hours)")
+        plt.ylabel("MSD (pixels)")
+        plt.show()
+    
+    return msd
 
 
 ## Squared distance travelled 
