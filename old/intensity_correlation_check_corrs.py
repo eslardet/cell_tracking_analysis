@@ -3,7 +3,7 @@ from skimage import io
 from matplotlib import pyplot as plt
 import numpy as np
 from well_plate_dictionary import *
-from image_analysis_functions import *
+from analysis_functions_image import *
 import os
 import time
 from scipy.signal import correlate, correlate2d, fftconvolve

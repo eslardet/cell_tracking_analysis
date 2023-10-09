@@ -3,16 +3,16 @@ from skimage import io
 from matplotlib import pyplot as plt
 import numpy as np
 from well_plate_dictionary import *
-from image_analysis_functions import *
+from analysis_functions_image import *
 import os
 import time
 from scipy.signal import correlate, correlate2d, fftconvolve, convolve
 # from scipy.fftpack import fft2, ifft2
 # from scipy.spatial import distance_matrix
 # from scipy.spatial.distance import cdist
-from intensity_correlation_fft import get_corr_fft, get_corr_slow, get_corr_im
+from intensity_correlation import get_corr_fft, get_corr_slow, get_corr_im
 
-def get_corr_manual(im):
+def get_corr_manual(im, corr_r_min, corr_r_max, r_bin_num):
     h,w = im.shape
     corr_list = []
     r_list = []
@@ -32,9 +32,9 @@ def get_corr_manual(im):
 
     corr_all = np.array(corr_list)
     rij_all = np.array(r_list)
-    corr_r_max = np.max(rij_all)
-    corr_r_min = 0
-    r_bin_num = 50
+    # corr_r_max = np.max(rij_all)
+    # corr_r_min = 0
+    # r_bin_num = 50
 
     bin_size = (corr_r_max-corr_r_min) / r_bin_num
     r_plot = np.linspace(corr_r_min, corr_r_max, num=r_bin_num, endpoint=False) + bin_size/2
@@ -49,11 +49,11 @@ def get_corr_manual(im):
         idx = np.where((rij_all>lower)&(rij_all<upper))[0]
         if len(idx) != 0:
             corr = np.mean(corr_all[idx])
-            corr_plot.append(corr/c0)
+            corr_plot.append(np.abs(corr/c0))
 
     return r_plot, corr_plot
 
-def get_corr_slow(im, take_av=True):
+def get_corr_slow(im, corr_r_min, corr_r_max, r_bin_num, take_av=True):
     # im = get_image(plate, well, phase)[frame]
     h,w = im.shape
     corr = correlate2d(im,im, mode='full')[h-1:,w-1:]
@@ -64,9 +64,9 @@ def get_corr_slow(im, take_av=True):
     corr = corr.flatten()
     rij_all = get_distance_matrix(im).flatten()
 
-    corr_r_max = np.max(rij_all)
-    corr_r_min = 0
-    r_bin_num = 50
+    # corr_r_max = np.max(rij_all)
+    # corr_r_min = 0
+    # r_bin_num = 50
 
     bin_size = (corr_r_max-corr_r_min) / r_bin_num
     r_plot = np.linspace(corr_r_min, corr_r_max, num=r_bin_num, endpoint=False) + bin_size/2
@@ -81,11 +81,11 @@ def get_corr_slow(im, take_av=True):
         idx = np.where((rij_all>lower)&(rij_all<upper))[0]
         if len(idx) != 0:
             c = np.mean(corr[idx])
-            corr_plot.append(c)
+            corr_plot.append(np.abs(c))
 
     return r_plot, corr_plot
 
-def get_corr_fft(im, take_av=True):
+def get_corr_fft(im, corr_r_min, corr_r_max, r_bin_num, take_av=True):
     h,w = im.shape
     corr = np.round(fftconvolve(im,im[::-1,::-1], mode='full')[h-1:,w-1:],0)
     avs = np.outer(np.arange(h,0,-1), np.arange(w,0,-1))
@@ -96,9 +96,10 @@ def get_corr_fft(im, take_av=True):
 
     rij_all = get_distance_matrix(im).flatten()
 
-    corr_r_max = np.max(rij_all)
-    corr_r_min = 0
-    r_bin_num = 100
+    # corr_r_max = np.max(rij_all)
+    # # corr_r_max = 100
+    # corr_r_min = 0
+    # r_bin_num = 50
 
     bin_size = (corr_r_max-corr_r_min) / r_bin_num
     r_plot = np.linspace(corr_r_min, corr_r_max, num=r_bin_num, endpoint=False) + bin_size/2
@@ -113,42 +114,50 @@ def get_corr_fft(im, take_av=True):
         idx = np.where((rij_all>lower)&(rij_all<upper))[0]
         if len(idx) != 0:
             c = np.mean(corr[idx])
-            corr_plot.append(c)
+            corr_plot.append(np.abs(c))
 
     return r_plot, corr_plot
 
-n = 50
-im = get_image(1737, "F4", "red")[-1]
+
+n = 100
+im = get_image(1737, "F4", "red")[-1][:n,:n]
 im = im - np.mean(im)
+
+corr_r_min = 0
+corr_r_max = 20
+r_bin_num = 20
+
 
 fig, ax = plt.subplots()
 
 t0 = time.time()
-r_plot, corr_plot = get_corr_manual(im)
+r_plot, corr_plot = get_corr_manual(im, corr_r_min, corr_r_max, r_bin_num)
 t1 = time.time() - t0
 ax.plot(r_plot, corr_plot, label="manual, t=" + str(np.round(t1,2)) + "s")
 
 t0 = time.time()
-r_plot, corr_plot = get_corr_slow(im, take_av=False)
+r_plot, corr_plot = get_corr_slow(im, corr_r_min, corr_r_max, r_bin_num, take_av=True)
 t1 = time.time() - t0
 ax.plot(r_plot, corr_plot, label="correlate2d, t=" + str(np.round(t1,2)) + "s")
 
 t0 = time.time()
-r_plot, corr_plot = get_corr_fft(im, take_av=False)
+r_plot, corr_plot = get_corr_fft(im, corr_r_min, corr_r_max, r_bin_num, take_av=True)
 t1 = time.time() - t0
 ax.plot(r_plot, corr_plot, label="fftconvolve, t=" + str(np.round(t1,2)) + "s")
 
 # t0 = time.time()
-# r_plot, corr_plot = get_corr_fft(im, take_av=False)
+# r_plot, corr_plot = get_corr_fft(im, corr_r_min, corr_r_max, r_bin_num, take_av=False)
 # t1 = time.time() - t0
 # ax.plot(r_plot, corr_plot, label="fftconvolve, no av")
 
 # t0 = time.time()
-# r_plot, corr_plot = get_corr_fft(im, take_av=True)
+# r_plot, corr_plot = get_corr_fft(im, corr_r_min, corr_r_max, r_bin_num, take_av=True)
 # t1 = time.time() - t0
 # ax.plot(r_plot, corr_plot, label="fftconvolve, with av")
 
-# ax.set_xbound(0,300)
+
+ax.set_yscale("log")
+# ax.set_xbound(0,100)
 ax.legend()
 plt.show()
 

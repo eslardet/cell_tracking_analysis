@@ -1,6 +1,6 @@
 import numpy as np
 # from analysis_functions_xml import *
-from image_analysis_functions import *
+from analysis_functions_image import *
 from scipy import ndimage as ndi
 from skimage import measure, segmentation, filters
 from skimage.measure import manders_coloc_coeff, intersection_coeff, pearson_corr_coeff
