@@ -247,7 +247,10 @@ def plot_exponents_time(plate, well, phase, frames, r_min, r_max, threshold=Fals
             # im = im/np.max(im) > 0.99
             im_mean = im - np.mean(im)
             im_scaled = im_mean/np.max(im_mean)
-            im = im_scaled > 0.75
+            im_thresh = im_scaled > 0.75
+            # im = im_thresh
+            # im_thresh = im > 0.25
+            im = np.multiply(im, im_thresh)
         exp.append(get_exponent(im, r_min, r_max, corr_av))
 
     fig, ax = plt.subplots()
@@ -267,7 +270,7 @@ def plot_exponents_time(plate, well, phase, frames, r_min, r_max, threshold=Fals
     plt.close()
 
 
-def plot_corr_exp_scatter(cell_type, plate_list, group_list, stim_list, t_cell_list, phase, frame, r_min, r_max, r_bin_num=100, save_plot=False, show_plot=True):
+def plot_corr_exp_scatter(cell_type, plate_list, group_list, stim_list, t_cell_list, phase, frame, r_min, r_max, r_bin_num=100, ylim=100, save_plot=False, show_plot=True, clean_green=False):
     fig, ax = plt.subplots(figsize=(12,6))
 
     x_ticks = []
@@ -278,7 +281,7 @@ def plot_corr_exp_scatter(cell_type, plate_list, group_list, stim_list, t_cell_l
     for group in group_list:
         for stim in stim_list:
             for t_cell in t_cell_list:
-                well_list = get_wells(group, stim, t_cell)
+                well_list = get_wells(group, stim, t_cell, clean_green)
                 all_exp = []
                 for plate in plate_list:
                     for well in well_list:
@@ -302,7 +305,7 @@ def plot_corr_exp_scatter(cell_type, plate_list, group_list, stim_list, t_cell_l
     ax.set_title(cell_type)
     set_axis_style(ax,x_ticks)
     ax.set_ylabel(r"Correlation length, $\xi$ (pixels))")
-    ax.set_ylim(0,200)
+    ax.set_ylim(0,ylim)
 
     ax.set_title(cell_type + ", " + stim + ", " + t_cell + ", frame=" + str(frame))
 
@@ -317,6 +320,63 @@ def plot_corr_exp_scatter(cell_type, plate_list, group_list, stim_list, t_cell_l
         plt.show()
 
     plt.close()
+
+
+def plot_corr_exp_scatter_av(cell_type, plate_list, group_list, stim_list, t_cell_list, phase, frame_list, r_min, r_max, r_bin_num=100, ylim=100, save_plot=False, show_plot=True, clean_green=False):
+    fig, ax = plt.subplots(figsize=(12,6))
+
+    x_ticks = []
+    exp_mean = []
+    exp_sd = []
+
+    pos = 1
+    for group in group_list:
+        for stim in stim_list:
+            for t_cell in t_cell_list:
+                well_list = get_wells(group, stim, t_cell, clean_green)
+                all_exp = []
+                for plate in plate_list:
+                    for well in well_list:
+                        file_path = get_tif_file(plate, well, phase)
+                        if os.path.exists(file_path):
+                            im = get_image(plate, well, phase)
+                            av_exp_frames = 0
+                            for frame in frame_list:
+                                radius, corr = get_corr_binned(im[frame], corr_r_min=r_min, corr_r_max=r_max, r_bin_num=r_bin_num)
+                                xi, coeff = fit_log_line(radius, corr, r_min, r_max)
+                                av_exp_frames += xi
+                            xi_av = av_exp_frames/len(frame_list)
+                            all_exp.append(xi_av)
+                            ax.scatter(pos, xi_av, marker='^', color='tab:blue')
+                            ax.annotate(str(plate) + ", " + well, (pos, xi_av)) 
+                print(len(all_exp), group, stim, t_cell)
+
+                # Mean tracks
+                exp_mean.append(np.mean(all_exp))
+                exp_sd.append(np.std(all_exp))
+
+                x_ticks.append(group + "\n " + stim + "\n " + t_cell)
+                pos += 1
+    ax.errorbar(np.arange(1, len(exp_mean)+1), exp_mean, yerr=exp_sd, fmt='o', capsize=3, color='k')
+    ax.set_title(cell_type)
+    set_axis_style(ax,x_ticks)
+    ax.set_ylabel(r"Correlation length, $\xi$ (pixels))")
+    ax.set_ylim(0,ylim)
+
+    ax.set_title(cell_type + ", " + stim + ", " + t_cell + ", frames=" + str(frame_list))
+
+    if save_plot == True:  
+        plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/correlation_exponents"
+        if not os.path.exists(plot_folder):
+            os.makedirs(plot_folder)
+        plot_name = cell_type + "_" + stim + "_" + t_cell + ".png"
+        plt.savefig(os.path.join(plot_folder, plot_name))
+
+    if show_plot == True:
+        plt.show()
+
+    plt.close()
+
 
 ## Colocalization ##
 
@@ -378,18 +438,20 @@ def plot_manders_vs_time(plate, well, slice_range, green_thresh=0.25, red_thresh
     plt.close()
 
 def plot_manders_increase(cell_type, group_list, stim_list, t_cell_list, slice_compare, green_thresh=0.25, red_thresh=0.15, time_av=False, show_plot=False, save_plot=True):
-    plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/colocalization_increase/"
-    if not os.path.exists(plot_folder):
-        os.makedirs(plot_folder)
-    plot_name = cell_type + "_" + stim_list[-1] + "_" + t_cell_list[-1] + "_" + str(slice_compare[1]) + ".png"
-    if os.path.exists(os.path.join(plot_folder, plot_name)):
-        print("Already plotted!")
-        print(os.path.join(plot_folder, plot_name))
-        return
+    # plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/colocalization_increase/"
+    # if not os.path.exists(plot_folder):
+    #     os.makedirs(plot_folder)
+    # plot_name = cell_type + "_" + stim_list[-1] + "_" + t_cell_list[-1] + "_" + str(slice_compare[1]) + ".png"
+    # if os.path.exists(os.path.join(plot_folder, plot_name)):
+    #     print("Already plotted!")
+    #     print(os.path.join(plot_folder, plot_name))
+    #     return
     
     fig, ax = plt.subplots(figsize=(12,6))
 
     x_ticks = []
+    increase_mean = []
+    increase_sd = []
 
     plate_list = get_plates(cell_type)
     pos = 1
@@ -397,6 +459,7 @@ def plot_manders_increase(cell_type, group_list, stim_list, t_cell_list, slice_c
         for stim in stim_list:
             for t_cell in t_cell_list:
                 well_list = get_wells(group, stim, t_cell)
+                all_increase = []
                 for plate in plate_list:
                     for well in well_list:
                         green_path = get_tif_file(plate, well, "green")
@@ -405,10 +468,15 @@ def plot_manders_increase(cell_type, group_list, stim_list, t_cell_list, slice_c
                     
                             percentage_increase = get_manders_increase(plate, well, slice_compare, green_thresh, red_thresh)
                             if percentage_increase > 0:
-                                ax.scatter(pos, percentage_increase, color='k')
+                                ax.scatter(pos, percentage_increase, marker='^', color='tab:blue')
                                 ax.annotate(str(plate) + ", " + well, (pos, percentage_increase))
+                                all_increase.append(percentage_increase)
                 x_ticks.append(group + "\n " + stim + "\n " + t_cell)
                 pos += 1
+                increase_mean.append(np.mean(all_increase))
+                increase_sd.append(np.std(all_increase))
+                
+    ax.errorbar(np.arange(1, len(increase_mean)+1), increase_mean, yerr=increase_sd, fmt='o', capsize=3, color='k')
     ax.set_ylabel("Percentage increase in Manders' Coefficient (%)")
     ax.set_ylim(0,800)
     set_axis_style(ax,x_ticks)
@@ -420,6 +488,69 @@ def plot_manders_increase(cell_type, group_list, stim_list, t_cell_list, slice_c
         if not os.path.exists(plot_folder):
             os.makedirs(plot_folder)
         plot_name = cell_type + "_" + stim + "_" + t_cell + "_" + str(slice_compare[1]) + ".png"
+        plt.savefig(os.path.join(plot_folder, plot_name))
+
+    if show_plot == True:
+        plt.show()
+
+    plt.close()
+
+def get_mander_mult_time(plate, well, slice_range, mult_thresh=2, green_thresh=0.75, red_thresh=0.15):
+    
+    coeff_0 = get_manders_coeff(plate, well, slice_range[0], green_thresh, red_thresh) ## t0
+    for s in slice_range[1:]:
+        coeff = get_manders_coeff(plate, well, s, green_thresh, red_thresh)
+        mult = coeff/coeff_0
+        if mult > mult_thresh:
+            return s/3
+        
+    return slice_range[-1]/3
+
+def plot_manders_double_time(cell_type, group_list, stim_list, t_cell_list, plate_list, slice_range, green_thresh=0.75, red_thresh=0.15, show_plot=False, save_plot=True):
+    # plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/colocalization_double_time/"
+    # if not os.path.exists(plot_folder):
+    #     os.makedirs(plot_folder)
+    # plot_name = cell_type + "_" + stim_list[-1] + "_" + t_cell_list[-1] + ".png"
+    
+    fig, ax = plt.subplots(figsize=(12,6))
+
+    x_ticks = []
+    time_mean = []
+    time_sd = []
+
+    # plate_list = get_plates(cell_type)
+    pos = 1
+    for group in group_list:
+        for stim in stim_list:
+            for t_cell in t_cell_list:
+                well_list = get_wells(group, stim, t_cell)
+                all_time = []
+                for plate in plate_list:
+                    for well in well_list:
+                        green_path = get_tif_file(plate, well, "green")
+                        red_path = get_tif_file(plate, well, "red")
+                        if os.path.exists(green_path) and os.path.exists(red_path):
+                            double_time = get_mander_mult_time(plate, well, slice_range, green_thresh=green_thresh, red_thresh=red_thresh)
+                            ax.scatter(pos, double_time, marker='^', color='tab:blue')
+                            ax.annotate(str(plate) + ", " + well, (pos, double_time))
+                            all_time.append(double_time)
+                x_ticks.append(group + "\n " + stim + "\n " + t_cell)
+                pos += 1
+                time_mean.append(np.mean(all_time))
+                time_sd.append(np.std(all_time))
+                
+    ax.errorbar(np.arange(1, len(time_mean)+1), time_mean, yerr=time_sd, fmt='o', capsize=3, color='k')
+    ax.set_ylabel("Doubling time for Manders Coefficient (hours)")
+    ax.set_ylim(0,72)
+    set_axis_style(ax,x_ticks)
+
+    ax.set_title(cell_type + ", Doubling Time compared to slice=" + str(slice_range[0]))
+
+    if save_plot == True:
+        plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/colocalization_double_time/"
+        if not os.path.exists(plot_folder):
+            os.makedirs(plot_folder)
+        plot_name = cell_type + "_" + stim + "_" + t_cell + ".png"
         plt.savefig(os.path.join(plot_folder, plot_name))
 
     if show_plot == True:
