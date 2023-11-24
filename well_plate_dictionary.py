@@ -5,6 +5,13 @@ all_wells = ["B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11",
              "F2", "F3", "F4", "F5", "F6", "F7",
              "G2", "G3", "G4", "G5", "G6", "G7"]
 
+wells_clean_green = ["B2", "B3", "B4", "B7", "B8", "B9", "B10", "B11", 
+              "C5", "C6", "C7", "C8", "C9", "C10", "C11",
+             "D2", "D3", "D4", "D5", "D6", "D7",
+             "E3", "E4", "E5", "E8", "E9", "E10", "E11",
+             "F2", "F3", "F4", "F5", "F6", "F7",
+             "G2", "G3", "G4", "G5", "G6", "G7"]
+
 all_groups = ["Only glial cells", "Uninfected healthy control", "AC lPVL", "AC hPVL", "HAM"]
 all_stim = ["With stimulation", "No stimulation"]
 all_t_cell = ["Non-specific CD4", "Specific CD4", "Non-specific CD8", "Specific CD8"]
@@ -32,11 +39,15 @@ plate_dict = {"Astrocytes & T-cells": ["1722", "1727", "1736"],
 
 
 
-def get_wells(group, stim, t_cell):
+def get_wells(group, stim, t_cell, clean_green=False):
     # Example:
     # inputs: group = "HAM", stim = "With stimulation", t_cell = "Specific CD4"
     # output: ['C8', 'C10']
-    return list(set.intersection(set(patient_group_dict[group]), set(stimulation_dict[stim]), set(t_cell_dict[t_cell])))
+    if clean_green == True:
+        set_wells = set(wells_clean_green)
+    else:
+        set_wells = set(all_wells)
+    return list(set.intersection(set(patient_group_dict[group]), set(stimulation_dict[stim]), set(t_cell_dict[t_cell]), set_wells))
 
 def get_well_info(well):
     well_group = ""
@@ -65,3 +76,6 @@ def get_plate_info(plate):
     return cell_types
 
 # print(get_well_info("F6"))
+
+# print(get_wells("HAM", "With stimulation", "Specific CD4"))
+# print(get_wells_clean_green("HAM", "With stimulation", "Specific CD4"))
