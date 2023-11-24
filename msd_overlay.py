@@ -2,7 +2,7 @@ import os
 import numpy as np
 import time
 from matplotlib import pyplot as plt
-from analysis_functions_xml import *
+from analysis_functions_tracks import *
 from well_plate_dictionary import *
 
 
@@ -101,9 +101,10 @@ phase = 'green'
 log = True
 remove_outliers = False
 
-plot_msd_overlay(cell_type, group_list, stim_list, t_cell_list, phase, log, remove_outliers)
+# plot_msd_overlay(cell_type, group_list, stim_list, t_cell_list, phase, log, remove_outliers)
 
 
-# plot_msd_all_tracks(plate='1737', well='C4', show_mean=False)
+# plot_msd_all_tracks(plate='1727', well='B2', show_mean=True)
+plot_msd_all_tracks_subset(plate='1728', well='B2', show_mean=False, d_threshold=400)
 
 # plot_msd_all_tracks_subset(plate='1737', well='C2', show_mean=False, d_threshold=400)
