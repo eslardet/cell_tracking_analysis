@@ -1,4 +1,4 @@
-.vscode/
-old/
-.ipynb_checkpoints/
-.jython_cache/
+.vscode
+old
+.ipynb_checkpoints
+.jython_cache
