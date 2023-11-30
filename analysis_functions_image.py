@@ -403,9 +403,20 @@ def get_manders_increase(plate, well, compare, green_thresh=0.25, red_thresh=0.1
 
     return percentage_increase
 
+def get_coloc_line(t_range, coloc):
+    c0 = coloc[0]
+    c_inf = coloc[-1]
+    def func(t, gamma, c_inf):
+        return c_inf - (c_inf-c0)*np.exp(-gamma*t)
+    gamma, c_inf = curve_fit(func, t_range, coloc)[0]
+    return gamma, c_inf
+
+def coloc_func(t, gamma, c_inf, c0):
+    return c_inf - (c_inf-c0)*np.exp(-gamma*t)
+
 ## Colocalization Plotting ##
 
-def plot_manders_vs_time(plate, well, slice_range, green_thresh=0.25, red_thresh=0.15, time_av=False, show_plot=False, save_plot=True):
+def plot_manders_vs_time(plate, well, slice_range, green_thresh=0.25, red_thresh=0.15, time_av=False, show_plot=False, save_plot=True, show_fit=False):
     green_path = get_tif_file(plate, well, "green")
     red_path = get_tif_file(plate, well, "red")
     if not os.path.exists(green_path) or not os.path.exists(red_path):
@@ -422,8 +433,16 @@ def plot_manders_vs_time(plate, well, slice_range, green_thresh=0.25, red_thresh
             coeff.append(get_manders_coeff(plate, well, i, green_thresh, red_thresh))
 
     fig,ax = plt.subplots()
-
     ax.plot(slice_range/3, coeff, 'o-')
+
+    if show_fit == True:
+        c0 = coeff[0]
+        # c_inf = coeff[-1]
+        gamma, c_inf = get_coloc_line(slice_range/3, coeff)
+        print(gamma, c0, c_inf)
+        ax.plot(slice_range/3, coloc_func(t=slice_range/3, gamma=gamma, c_inf=c_inf, c0=c0), 'r--', label=r"$\gamma=$" + str(round(gamma,2)))
+        ax.legend()
+    
     ax.set_xlabel("Time (hours)")
     ax.set_ylabel("Manders' colocalization coefficient")
     ax.set_ylim([0,1])
@@ -436,6 +455,61 @@ def plot_manders_vs_time(plate, well, slice_range, green_thresh=0.25, red_thresh
     if show_plot == True:
         plt.show()
     plt.close()
+
+def plot_manders_exponent(cell_type, plate_list, group_list, stim_list, t_cell_list, slice_range, green_thresh=0.25, red_thresh=0.15, show_plot=False, save_plot=True):
+    fig, ax = plt.subplots(figsize=(12,6))
+    x_ticks = []
+    gamma_mean = []
+    gamma_sd = []
+
+    pos = 1
+    for group in group_list:
+        for stim in stim_list:
+            for t_cell in t_cell_list:
+                well_list = get_wells(group, stim, t_cell)
+                all_gamma = []
+                for plate in plate_list:
+                    for well in well_list:
+                        green_path = get_tif_file(plate, well, "green")
+                        red_path = get_tif_file(plate, well, "red")
+                        if os.path.exists(green_path) and os.path.exists(red_path):
+                            coeff = []
+                            for i in slice_range:
+                                coeff.append(get_manders_coeff(plate, well, i, green_thresh, red_thresh))
+                            if coeff[-1] > coeff[0]:
+                                try:
+                                    gamma, c_inf = get_coloc_line(slice_range/3, coeff)
+                                    all_gamma.append(gamma)
+                                    ax.scatter(pos, gamma, marker='^', color='tab:blue')
+                                    ax.annotate(str(plate) + ", " + well, (pos, gamma))
+                                except:
+                                    print("Cannot fit line for " + str(plate) + ", " + well)
+                                    pass
+                            else:
+                                print("Coeff decreases for " + str(plate) + ", " + well)
+                x_ticks.append(group + "\n " + stim + "\n " + t_cell)
+                pos += 1
+                gamma_mean.append(np.mean(all_gamma))
+                gamma_sd.append(np.std(all_gamma))
+                
+    ax.errorbar(np.arange(1, len(gamma_mean)+1), gamma_mean, yerr=gamma_sd, fmt='o', capsize=3, color='k')
+    ax.set_ylabel("Manders' colocalization fitted growth exponent")
+    ax.set_ylim(0,0.5)
+    set_axis_style(ax,x_ticks)
+
+    ax.set_title(cell_type)
+
+    if save_plot == True:
+        plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/colocalization_exponent/"
+        if not os.path.exists(plot_folder):
+            os.makedirs(plot_folder)
+        plot_name = cell_type + "_" + stim + "_" + t_cell + ".png"
+        plt.savefig(os.path.join(plot_folder, plot_name))
+
+    if show_plot == True:
+        plt.show()
+
+    plt.close()    
 
 def plot_manders_increase(cell_type, group_list, stim_list, t_cell_list, slice_compare, green_thresh=0.25, red_thresh=0.15, time_av=False, show_plot=False, save_plot=True):
     # plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/colocalization_increase/"
@@ -557,3 +631,4 @@ def plot_manders_double_time(cell_type, group_list, stim_list, t_cell_list, plat
         plt.show()
 
     plt.close()
+
