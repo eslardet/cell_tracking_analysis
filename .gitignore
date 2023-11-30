@@ -4,3 +4,4 @@ old
 .jython_cache.DS_Store
 .DS_Store
 __pycache__
+.jython_cache
