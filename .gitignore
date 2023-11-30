@@ -1,6 +1,5 @@
 .vscode
 old
-.ipynb_checkpoints
 .jython_cache.DS_Store
 .DS_Store
 __pycache__
