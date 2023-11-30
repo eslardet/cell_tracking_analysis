@@ -105,6 +105,6 @@ remove_outliers = False
 
 
 # plot_msd_all_tracks(plate='1727', well='B2', show_mean=True)
-plot_msd_all_tracks_subset(plate='1728', well='B2', show_mean=False, d_threshold=400)
+plot_msd_all_tracks_subset(plate='1723', well='B3', show_mean=False, d_threshold=400)
 
 # plot_msd_all_tracks_subset(plate='1737', well='C2', show_mean=False, d_threshold=400)

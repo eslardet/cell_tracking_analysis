@@ -36,6 +36,7 @@ def plot_sdt_overlay(cell_type, group_list, stim_list, t_cell_list, phase='green
 def plot_sdt_all_tracks(plate, well):
     file_path = get_xml_file(plate, well)
     sdt_all = get_sdt_individual_tracks(file_path)
+    print(len(sdt_all))
     fig, ax = plt.subplots()
     for sdt in sdt_all:
         n_frames = len(sdt)
@@ -46,7 +47,7 @@ def plot_sdt_all_tracks(plate, well):
 
     ax.set_xlabel(r"$\tau$ (hours)")
     ax.set_ylabel("SDT (pixels^2)")
-    ax.set_ylim(0, 10000)
+    # ax.set_ylim(0, 10000)
     plt.show()
 
 cell_type = 'Microglia & T-cells'
@@ -60,5 +61,14 @@ remove_outliers = False
 
 # plot_sdt_overlay(cell_type, group_list, stim_list, t_cell_list, phase, log, max_frames=72)
 
+plate = '1736'
+well = 'G4'
 
-plot_sdt_all_tracks(plate='1737', well='G2')
+# plot_sdt_all_tracks(plate, well)
+plot_sdt_grad(plate, well)
+
+file_path = get_xml_file(plate, well)
+grads = get_sdt_grad(file_path)
+print(len(grads))
+print(sum([g < 50 for g in grads])/len(grads))
+print(sum([g > 50 for g in grads])/len(grads))
