@@ -174,18 +174,18 @@ def get_sdt_individual_tracks(file_path, max_frames=200):
     sdt_all = []
     for track in tracks:
         t0 = track[0][0]
-        if t0 <= 2:
-            sdt = []
-            n_frames = track[-1][0]-track[0][0]
-            for t in range(max_frames):
-                sdt_t = []
-                if t<n_frames:
-                    diff = np.array(track[t][1:]) - np.array(track[0][1:])
-                    sdt_t.append(diff[0]**2 + diff[1]**2)
-                if len(sdt_t) > 0:
-                    mean_t = np.mean(sdt_t)
-                    sdt.append(mean_t)
-            sdt_all.append(sdt)
+        # if t0 <= 2:
+        sdt = []
+        n_frames = track[-1][0]-track[0][0]
+        for t in range(max_frames):
+            sdt_t = []
+            if t<n_frames:
+                diff = np.array(track[t][1:]) - np.array(track[0][1:])
+                sdt_t.append(diff[0]**2 + diff[1]**2)
+            if len(sdt_t) > 0:
+                mean_t = np.mean(sdt_t)
+                sdt.append(mean_t)
+        sdt_all.append(sdt)
     return sdt_all
 
 def plot_sdt_vs_t0(file_path, tau_range, plot_name, max_frames=200, max_plot=15, log=False):
@@ -236,6 +236,19 @@ def get_sdt_vs_t0(file_path, tau, max_frames=25):
     
     return sdt
 
+def get_sdt_grad(file_path, max_frames=15):
+    sdt_all = get_sdt_individual_tracks(file_path, max_frames=max_frames)
+    grad = []
+    for sdt in sdt_all:
+        if len(sdt) == max_frames:
+            grad.append(np.polyfit(np.arange(max_frames), sdt, 1)[0])
+    return grad
+
+def plot_sdt_grad(plate, well):
+    file_path = get_xml_file(plate, well)
+    grad = get_sdt_grad(file_path)
+    plt.hist(grad, bins=100)
+    plt.show()
 
 ## Diffusion coefficient
 
@@ -369,7 +382,8 @@ def plot_d_box(cell_type, group_list, stim_list, t_cell_list, save_plot=False, s
                             # Mean tracks
                             d_av.append(get_d(plate, well))
                             d_c = get_d(plate, well)
-                            ax.scatter(pos, d_c, color='k')        
+                            ax.scatter(pos, d_c, color='k')
+                            ax.annotate(str(plate) + ", " + well, (pos, d_c))        
                 print(len(all_d), group, stim, t_cell)
 
                 # Individual tracks
