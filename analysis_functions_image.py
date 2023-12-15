@@ -380,7 +380,7 @@ def plot_corr_exp_scatter_av(cell_type, plate_list, group_list, stim_list, t_cel
 
 ## Colocalization ##
 
-def get_manders_coeff(plate, well, slice, green_thresh=0.25, red_thresh=0.15):
+def get_manders_coeff(plate, well, slice, green_thresh=0.75, red_thresh=0.15):
     im_red = get_image(plate, well, "red")[slice]
     im_green = get_image(plate, well, "green")[slice]
 
@@ -395,7 +395,7 @@ def get_manders_coeff(plate, well, slice, green_thresh=0.25, red_thresh=0.15):
     coeff = measure.manders_coloc_coeff(im_green_thresh, im_red_thresh)
     return coeff
 
-def get_manders_increase(plate, well, compare, green_thresh=0.25, red_thresh=0.15):
+def get_manders_increase(plate, well, compare, green_thresh=0.75, red_thresh=0.15):
     coeff0 = get_manders_coeff(plate, well, compare[0], green_thresh, red_thresh)
     coeff1 = get_manders_coeff(plate, well, compare[1], green_thresh, red_thresh)
     
@@ -416,7 +416,7 @@ def coloc_func(t, gamma, c_inf, c0):
 
 ## Colocalization Plotting ##
 
-def plot_manders_vs_time(plate, well, slice_range, green_thresh=0.25, red_thresh=0.15, time_av=False, show_plot=False, save_plot=True, show_fit=False):
+def plot_manders_vs_time(plate, well, slice_range, green_thresh=0.75, red_thresh=0.15, time_av=False, show_plot=False, save_plot=True, show_fit=False):
     green_path = get_tif_file(plate, well, "green")
     red_path = get_tif_file(plate, well, "red")
     if not os.path.exists(green_path) or not os.path.exists(red_path):
@@ -456,7 +456,7 @@ def plot_manders_vs_time(plate, well, slice_range, green_thresh=0.25, red_thresh
         plt.show()
     plt.close()
 
-def plot_manders_exponent(cell_type, plate_list, group_list, stim_list, t_cell_list, slice_range, green_thresh=0.25, red_thresh=0.15, show_plot=False, save_plot=True):
+def plot_manders_exponent(cell_type, plate_list, group_list, stim_list, t_cell_list, slice_range, green_thresh=0.75, red_thresh=0.15, show_plot=False, save_plot=True):
     fig, ax = plt.subplots(figsize=(12,6))
     x_ticks = []
     gamma_mean = []
@@ -511,15 +511,18 @@ def plot_manders_exponent(cell_type, plate_list, group_list, stim_list, t_cell_l
 
     plt.close()    
 
-def plot_manders_increase(cell_type, group_list, stim_list, t_cell_list, slice_compare, green_thresh=0.25, red_thresh=0.15, time_av=False, show_plot=False, save_plot=True):
-    # plot_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/colocalization_increase/"
-    # if not os.path.exists(plot_folder):
-    #     os.makedirs(plot_folder)
-    # plot_name = cell_type + "_" + stim_list[-1] + "_" + t_cell_list[-1] + "_" + str(slice_compare[1]) + ".png"
-    # if os.path.exists(os.path.join(plot_folder, plot_name)):
-    #     print("Already plotted!")
-    #     print(os.path.join(plot_folder, plot_name))
-    #     return
+def plot_manders_increase(cell_type, plate_list, group_list, stim, t_cell, slice_compare, 
+                          green_thresh=0.75, red_thresh=0.15, rescale_list=[], time_av=False, show_plot=False, save_plot=True, save_data=False):
+    if save_data == True:
+        data_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plot_data/colocalization_increase/"
+        if not os.path.exists(data_folder):
+            os.makedirs(data_folder)
+        file_name = cell_type + "_" + stim + "_" + t_cell + "_" + str(slice_compare[1]) + ".txt"
+        with open(os.path.join(data_folder, file_name), "w") as f:
+            f.write("Compare slices " + str(slice_compare[0]) + " and " + str(slice_compare[1]) + "\n")
+            f.write("Green Threshold: " + str(green_thresh) + "\n")
+            f.write("Red Threshold: " + str(red_thresh) + "\n")
+            f.write("Rescale List: " + str(rescale_list) + "\n")
     
     fig, ax = plt.subplots(figsize=(12,6))
 
@@ -527,32 +530,36 @@ def plot_manders_increase(cell_type, group_list, stim_list, t_cell_list, slice_c
     increase_mean = []
     increase_sd = []
 
-    plate_list = get_plates(cell_type)
     pos = 1
     for group in group_list:
-        for stim in stim_list:
-            for t_cell in t_cell_list:
-                well_list = get_wells(group, stim, t_cell)
-                all_increase = []
-                for plate in plate_list:
-                    for well in well_list:
-                        green_path = get_tif_file(plate, well, "green")
-                        red_path = get_tif_file(plate, well, "red")
-                        if os.path.exists(green_path) and os.path.exists(red_path):
-                    
-                            percentage_increase = get_manders_increase(plate, well, slice_compare, green_thresh, red_thresh)
-                            if percentage_increase > 0:
-                                ax.scatter(pos, percentage_increase, marker='^', color='tab:blue')
-                                ax.annotate(str(plate) + ", " + well, (pos, percentage_increase))
-                                all_increase.append(percentage_increase)
-                x_ticks.append(group + "\n " + stim + "\n " + t_cell)
-                pos += 1
-                increase_mean.append(np.mean(all_increase))
-                increase_sd.append(np.std(all_increase))
+        well_list = get_wells(group, stim, t_cell)
+        all_increase = []
+        for plate in plate_list:
+            for well in well_list:
+                green_path = get_tif_file(plate, well, "green")
+                red_path = get_tif_file(plate, well, "red")
+                if os.path.exists(green_path) and os.path.exists(red_path):
+                    if str(plate) + " " + well in rescale_list:
+                        green_thresh = 0.75
+                    else:
+                        green_thresh = 0.25
+                    percentage_increase = get_manders_increase(plate, well, slice_compare, green_thresh, red_thresh)
+                    # if percentage_increase > 0: ## Only plot if increase (should I change this??)
+                    ax.scatter(pos, percentage_increase, marker='^', color='tab:blue')
+                    ax.annotate(str(plate) + ", " + well, (pos, percentage_increase))
+                    all_increase.append(percentage_increase)
+
+                    if save_data == True:
+                        with open(os.path.join(data_folder, file_name), "a") as f:
+                            f.write(str(pos) + "\t" + str(plate) + "\t " + well + "\t" + str(percentage_increase) + "\n")
+        x_ticks.append(group + "\n " + stim + "\n " + t_cell)
+        pos += 1
+        increase_mean.append(np.mean(all_increase))
+        increase_sd.append(np.std(all_increase))
                 
     ax.errorbar(np.arange(1, len(increase_mean)+1), increase_mean, yerr=increase_sd, fmt='o', capsize=3, color='k')
     ax.set_ylabel("Percentage increase in Manders' Coefficient (%)")
-    ax.set_ylim(0,800)
+    ax.set_ylim(0,300)
     set_axis_style(ax,x_ticks)
 
     ax.set_title(cell_type + ", compare slices " + str(slice_compare[0]) + " and " + str(slice_compare[1]))
