@@ -1,6 +1,11 @@
-.vscode
-old
-.jython_cache.DS_Store
+## Folders ##
+.vscode/
+.jython_cache/
+old/
+__pycache__/
+tests/
+
+
+## Files ##
+test.py
 .DS_Store
-__pycache__
-.jython_cache

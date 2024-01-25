@@ -1,3 +1,7 @@
+import os, sys, inspect
+parentdir = os.path.diranme(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+sys.path.insert(0, parentdir)
+
 # from PIL import Image, ImageEnhance
 from skimage import io
 from matplotlib import pyplot as plt

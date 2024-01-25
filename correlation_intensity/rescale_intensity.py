@@ -1,3 +1,7 @@
+import os, sys, inspect
+parentdir = os.path.diranme(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+sys.path.insert(0, parentdir)
+
 from analysis_functions_image import *
 from analysis_functions_tracks import *
 import tifffile as tiff

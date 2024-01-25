@@ -1,3 +1,6 @@
+import os, sys, inspect
+parentdir = os.path.diranme(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+sys.path.insert(0, parentdir)
 import numpy as np
 # from analysis_functions_xml import *
 from analysis_functions_image import *

@@ -1,4 +1,6 @@
-import os
+import os, sys, inspect
+parentdir = os.path.diranme(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+sys.path.insert(0, parentdir)
 import analysis_functions_tracks as fun
 import numpy as np
 import time
