@@ -7,10 +7,19 @@ from matplotlib.animation import FuncAnimation
 import os
 from scipy import stats
 from well_plate_dictionary import *
+import numba
+import seaborn as sns
 
 def get_xml_file(plate, well, phase="green"):
     plate = str(plate)
     xml_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/xml/" + plate
+    filename = 'VID' + plate + '_' + phase + '_' + well + '_1'
+    file_path = os.path.join(xml_folder, filename + '.xml')
+    return file_path
+
+def get_xml_file_vel(plate, well, phase="green"):
+    plate = str(plate)
+    xml_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/xml_velocity/" + plate
     filename = 'VID' + plate + '_' + phase + '_' + well + '_1'
     file_path = os.path.join(xml_folder, filename + '.xml')
     return file_path
@@ -416,3 +425,121 @@ def plot_d_box(cell_type, group_list, stim_list, t_cell_list, save_plot=False, s
 
     if show_plot == True:
         plt.show()
+
+
+### Speed calculations ###
+
+@numba.jit(forceobj=True)
+def get_velocities(tracks):
+    time_plot = []
+    vel_plot = []
+    n_tracks = len(tracks)
+    for j in range(n_tracks):
+        track = tracks[j]
+        n_frames = track[-1][0]-track[0][0]
+        for i in range(1, n_frames):
+            if i < 216:
+                t = track[i][0]
+                dx = track[i][1] - track[i-1][1]
+                dy = track[i][2] - track[i-1][2]
+                dt = 1/3
+                vel = math.sqrt(dx**2 + dy**2)/dt
+                time_plot.append(t)
+                vel_plot.append(vel)
+    time_plot = np.array(time_plot)
+    vel_plot = np.array(vel_plot)
+    return time_plot, vel_plot
+
+def bin_velocities(time_plot, vel_plot, max_frames=None, n_bins=None):
+    time_plot = np.array(time_plot)
+    vel_plot = np.array(vel_plot)
+    vel_sd = np.zeros(n_bins-1)
+    if max_frames == None:
+        max_frames = np.max(time_plot)
+    if n_bins == None:
+        n_bins = int(max_frames/3)
+    time_bins = np.linspace(0, max_frames, n_bins)
+    vel_bins_mean = np.zeros(n_bins-1)
+    vel_bins_median = np.zeros(n_bins-1)
+    vel_bins_mode = np.zeros(n_bins-1)
+    for i in range(n_bins-1):
+        vel_bins_mean[i] = np.mean(vel_plot[np.where((time_plot >= time_bins[i]) & (time_plot < time_bins[i+1]))[0]])
+        vel_bins_median[i] = np.median(vel_plot[np.where((time_plot >= time_bins[i]) & (time_plot < time_bins[i+1]))[0]])
+        vel_bins_mode[i] = stats.mode(vel_plot[np.where((time_plot >= time_bins[i]) & (time_plot < time_bins[i+1]))[0]], keepdims=True)[0][0]
+        vel_sd[i] = np.std(vel_plot[np.where((time_plot >= time_bins[i]) & (time_plot < time_bins[i+1]))[0]])
+        # print(len(vel_plot[np.where((time_plot >= time_bins[i]) & (time_plot < time_bins[i+1]))[0]]))
+    time_bins = np.array(time_bins)[:-1]/3 ## So that time bins are in hours
+    time_bins += max_frames/3/n_bins/2 ## So that time bins are centerd
+    return time_bins, vel_bins_mean, vel_bins_median, vel_bins_mode, vel_sd
+
+def plot_velocity_time_scatter(plate, well, plot_mean=True, n_bins=24, save_plot=True, show_plot=True):
+    fig, ax = plt.subplots()
+    filepath = get_xml_file_vel(plate, well)
+    tracks = read_xml(filepath)
+    time_plot, vel_plot = get_velocities(tracks)
+    time_bins, vel_bins, vel_sd = bin_velocities(time_plot, vel_plot, n_bins)
+    ax.scatter(np.array(time_plot)/3, vel_plot, marker='o', color="tab:blue", s=10, alpha=0.5)
+    if plot_mean:
+        ax.plot(np.array(time_bins)/3, vel_bins, "-o", color="black")
+    ax.set_xlim(0,72)
+    ax.set_xlabel("Time (hrs)")
+    ax.set_ylabel("Instantaneous velocity (pixels/hr)")
+
+    if show_plot:
+        plt.show()
+    if save_plot:
+        folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/velocity_time/"
+        # file_name = str(plate) + "_CD4_stim_thresh5.png"
+        file_name = str(plate) + "_" + well + "_scatter.png"
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        plt.savefig(folder + file_name)
+        plt.close()
+
+def plot_velocity_time_mean(plate, wells, n_bins=24, save_plot=True, show_plot=True):
+    fig, ax = plt.subplots()
+    for well in wells:
+        filepath = get_xml_file_vel(plate, well)
+        tracks = read_xml(filepath)
+        time_plot, vel_plot = get_velocities(tracks)
+        time_bins, vel_bins, vel_sd = bin_velocities(time_plot, vel_plot, n_bins)
+        group, t_cell, stim = get_well_info(well)
+        ax.plot(np.array(time_bins), vel_bins, "-o", color="black", label=group + ", " + well)
+    ax.set_xlim(0,72)
+    ax.set_ylim(3,12)
+    ax.set_xlabel("Time (hrs)")
+    ax.set_ylabel("Instantaneous velocity (pixels/hr)")
+    ax.legend()
+
+    if show_plot:
+        plt.show()
+    if save_plot:
+        folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/velocity_time/"
+        file_name = str(plate) + "_CD4_stim.png"
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        plt.savefig(folder + file_name)
+        plt.close()
+
+def plot_velocity_distribution(plate, well, time_interval, kde=False, bins=100, max_hist=60, ax=None):
+    if ax == None:
+        fig, ax = plt.subplots()
+
+    filepath = get_xml_file_vel(plate, well)
+    tracks = read_xml(filepath)
+    time_plot, vel_plot = get_velocities(tracks)
+    idx = np.where((np.array(time_plot) >= time_interval[0]) & (np.array(time_plot) < time_interval[1]))[0]
+    vel_plot_dist = vel_plot[idx]
+    hist, bin_edges = np.histogram(vel_plot_dist, bins=bins, range=(0,max_hist), density=True)
+    bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
+    group, t_cell, stim = get_well_info(well)
+    if kde:
+        sns.kdeplot(vel_plot_dist, ax=ax, label=group + ", " + str(plate) + ", " + well + ", " + str(time_interval[0]) + "-" + str(time_interval[1]) + " hrs")
+    else:
+        ax.plot(bin_centres, hist, label=group + ", " + str(plate) + ", " + well + ", " + str(time_interval[0]) + "-" + str(time_interval[1]) + " hrs")
+        # ax.hist(vel_plot_dist, bins=bins*20, range=(0,max_hist), density=True, label=group + ", " + str(plate) + ", " + well + ", " + str(time_interval[0]) + "-" + str(time_interval[1]) + " hrs")
+    ax.set_xlabel("Velocity (pixels/hr)")
+    ax.set_ylabel("P(v)")
+    # ax.legend()
+    
+    return ax
