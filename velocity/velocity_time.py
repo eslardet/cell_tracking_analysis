@@ -12,14 +12,14 @@ from scipy import stats
 
 ## Velocity vs time
 
-plate = 1738
+plate = 1737
 av_type = 'median'
 # all_wells = ["C2", "C4", "C6", "C8", "C10", "G2"]
 # all_wells = ['C3', 'C5', 'C7', 'C9', 'C11', 'G3']
 # all_wells = ['E2', 'E4', 'E6', 'E8', 'E10', 'G4']
 
-stim = "No stimulation"
-t_cell = "Specific CD4"
+# stim = "No stimulation"
+# t_cell = "Specific CD4"
 
 for stim in all_stim:
     for t_cell in all_t_cell:
