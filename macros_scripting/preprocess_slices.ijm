@@ -11,7 +11,7 @@ if (File.exists(output) == 0) {
 
 
 // To remove any initial frame
-end_frame = 73;
+end_frame = 216;
 
 list = getFileList(input);
 for (i=0; i<list.length; i++) {

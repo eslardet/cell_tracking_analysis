@@ -1,11 +1,13 @@
 //run("TIFF Virtual Stack...", "open=[/Volumes/T7 Shield/Incucyte_data/processed_data/1737/VID1737_green_F4_1.tif]");
 //run("Slice Keeper", "first=217 last=217 increment=1");
+ 
 run("TIFF Virtual Stack...", "open=[/Volumes/T7 Shield/Incucyte_data/processed_data/1737/VID1737_red_F4_1.tif]");
 run("Slice Keeper", "first=217 last=217 increment=1");
 selectImage("VID1737_red_F4_1.tif");
 run("Slice Keeper", "first=217 last=217 increment=1");
 selectImage("VID1737_red_F4_1.tif");
 close();
+
 //selectImage("VID1737_green_F4_1.tif");
 //close();
 //run("JACoP ");
