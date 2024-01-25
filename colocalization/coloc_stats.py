@@ -9,17 +9,6 @@ import csv
 from scipy.stats import wilcoxon, ranksums, ttest_ind
 import seaborn as sns
 
-def read_coloc_increase(cell_type, stim, t_cell, slice_compare):
-    data_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plot_data/colocalization_increase/"
-    file_name = cell_type + "_" + stim + "_" + t_cell + "_" + str(slice_compare[1]) + ".txt"
-    with open(data_folder + file_name, 'r') as f:
-        reader = csv.reader(f, delimiter='\t')
-        data = np.array(list(reader)[4:])
-
-    group = np.array(data[:, 0], dtype=int)
-    manders_increase = np.array(data[:, 3], dtype=float)
-
-    return group, manders_increase
 
 def t_test(x,y,alternative='both-sided'):
     _, double_p = ttest_ind(x,y,equal_var = False)

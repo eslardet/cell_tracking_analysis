@@ -10,22 +10,10 @@ from scipy.stats import wilcoxon, ranksums, ttest_ind
 import seaborn as sns
 import time
 
-def read_coloc_increase(cell_type, stim, t_cell, slice_compare):
-    data_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plot_data/colocalization_increase/"
-    file_name = cell_type + "_" + stim + "_" + t_cell + "_" + str(slice_compare[1]) + ".txt"
-    with open(data_folder + file_name, 'r') as f:
-        reader = csv.reader(f, delimiter='\t')
-        data = np.array(list(reader)[4:])
-
-    group = np.array(data[:, 0], dtype=int)
-    manders_increase = np.array(data[:, 3], dtype=float)
-
-    return group, manders_increase
 
 def plot_coloc(cell_type, stim, t_cell, slice_compare, ax=None):
 
     group, manders_increase = read_coloc_increase(cell_type, stim, t_cell, slice_compare)
-
     control_group = manders_increase[np.where(group == 1)[0]]
     AC_lPVL_group = manders_increase[np.where(group == 2)[0]]
     AC_hPVL_group = manders_increase[np.where(group == 3)[0]]
@@ -56,11 +44,10 @@ def plot_coloc(cell_type, stim, t_cell, slice_compare, ax=None):
 
 
 cell_type = 'Microglia & T-cells'
-stim = "With stimulation"
-t_cell = "Specific CD4"
-slice_compare = [3, 108]
+stim = "No stimulation"
+t_cell = "Non-specific CD4"
+# slice_compare = [3, 108]
 
-t0 = time.time()
 # plot_coloc(cell_type, stim, t_cell, slice_compare)
 
 fig, axes = plt.subplots(2, 3, figsize=(15,10), sharey=True, sharex=True)
@@ -74,18 +61,17 @@ for i, ax in enumerate(axes.flat):
     ax.set_title("t=" + str(slice_compare_list[i]//3) + "hrs")
     ax.set_ylim([-10,300])
 
-fig.legend(["Uninfected healthy control", "AC lPVL", "AC hPVL", "HAM"], loc='upper center', ncol=4)
+# fig.legend(ax.patches, ["Uninfected healthy control", "AC lPVL", "AC hPVL", "HAM"], loc='upper center', ncol=4)
 
-folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/colocalization_increase/Microglia_CD4_stim/box/"
+folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plots/colocalization_increase/"
 if not os.path.exists(folder):
     os.makedirs(folder)
-file_name = "all.png"
-# plt.savefig(folder + file_name)
-# plt.close()
+file_name = "Microglia" + "_" + stim + "_" + t_cell + "_" + "all.png"
+# file_name = "all.png"
+plt.savefig(folder + file_name)
+plt.close()
 
-print(time.time()-t0)
-
-plt.show()
+# plt.show()
 
 
 ## Stats ##

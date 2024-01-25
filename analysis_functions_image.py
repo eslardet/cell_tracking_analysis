@@ -1,3 +1,4 @@
+import csv
 # from PIL import Image, ImageEnhance
 from skimage import io
 # from skimage.transform import resize
@@ -512,7 +513,7 @@ def plot_manders_exponent(cell_type, plate_list, group_list, stim_list, t_cell_l
     plt.close()    
 
 def plot_manders_increase(cell_type, plate_list, group_list, stim, t_cell, slice_compare, 
-                          green_thresh=0.75, red_thresh=0.15, rescale_list=[], time_av=False, show_plot=False, save_plot=True, save_data=False):
+                          green_thresh_default=0.25, red_thresh=0.15, rescale_list=[], time_av=False, show_plot=False, save_plot=True, save_data=False):
     if save_data == True:
         data_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plot_data/colocalization_increase/"
         if not os.path.exists(data_folder):
@@ -520,7 +521,7 @@ def plot_manders_increase(cell_type, plate_list, group_list, stim, t_cell, slice
         file_name = cell_type + "_" + stim + "_" + t_cell + "_" + str(slice_compare[1]) + ".txt"
         with open(os.path.join(data_folder, file_name), "w") as f:
             f.write("Compare slices " + str(slice_compare[0]) + " and " + str(slice_compare[1]) + "\n")
-            f.write("Green Threshold: " + str(green_thresh) + "\n")
+            f.write("Green Threshold: " + str(green_thresh_default) + "\n")
             f.write("Red Threshold: " + str(red_thresh) + "\n")
             f.write("Rescale List: " + str(rescale_list) + "\n")
     
@@ -542,9 +543,8 @@ def plot_manders_increase(cell_type, plate_list, group_list, stim, t_cell, slice
                     if str(plate) + " " + well in rescale_list:
                         green_thresh = 0.75
                     else:
-                        green_thresh = 0.25
+                        green_thresh = green_thresh_default
                     percentage_increase = get_manders_increase(plate, well, slice_compare, green_thresh, red_thresh)
-                    # if percentage_increase > 0: ## Only plot if increase (should I change this??)
                     ax.scatter(pos, percentage_increase, marker='^', color='tab:blue')
                     ax.annotate(str(plate) + ", " + well, (pos, percentage_increase))
                     all_increase.append(percentage_increase)
@@ -639,3 +639,14 @@ def plot_manders_double_time(cell_type, group_list, stim_list, t_cell_list, plat
 
     plt.close()
 
+def read_coloc_increase(cell_type, stim, t_cell, slice_compare):
+    data_folder = "/Users/el2021/OneDrive - Imperial College London/PhD/Incucyte/plot_data/colocalization_increase/"
+    file_name = cell_type + "_" + stim + "_" + t_cell + "_" + str(slice_compare[1]) + ".txt"
+    with open(data_folder + file_name, 'r') as f:
+        reader = csv.reader(f, delimiter='\t')
+        data = np.array(list(reader)[4:])
+
+    group = np.array(data[:, 0], dtype=int)
+    manders_increase = np.array(data[:, 3], dtype=float)
+
+    return group, manders_increase
